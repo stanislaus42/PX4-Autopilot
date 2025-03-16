@@ -55,8 +55,6 @@ bool GZMixingInterfaceESC::init(const std::string &model_name)
 
 	_esc_status_pub.advertise();
 
-	pthread_mutex_init(&_node_mutex, nullptr);
-
 	ScheduleNow();
 
 	return true;

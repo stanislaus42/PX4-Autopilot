@@ -91,9 +91,12 @@
 /* LEDs are driven with push open drain to support Anode to 5V or 3.3V or used as TRACE0-2 */
 
 #if !defined(TRACE_PINS)
-#  define GPIO_nLED_RED        /* PE3 */  (GPIO_OUTPUT|GPIO_OPENDRAIN|GPIO_SPEED_50MHz|GPIO_OUTPUT_SET|GPIO_PORTE|GPIO_PIN3)
-#  define GPIO_nLED_GREEN      /* PE4 */  (GPIO_OUTPUT|GPIO_OPENDRAIN|GPIO_SPEED_50MHz|GPIO_OUTPUT_SET|GPIO_PORTE|GPIO_PIN4)
-#  define GPIO_nLED_BLUE       /* PE5 */  (GPIO_OUTPUT|GPIO_OPENDRAIN|GPIO_SPEED_50MHz|GPIO_OUTPUT_SET|GPIO_PORTE|GPIO_PIN5)
+// #  define GPIO_nLED_RED        /* PE3 */  (GPIO_OUTPUT|GPIO_OPENDRAIN|GPIO_SPEED_50MHz|GPIO_OUTPUT_SET|GPIO_PORTE|GPIO_PIN3)
+// #  define GPIO_nLED_GREEN      /* PE4 */  (GPIO_OUTPUT|GPIO_OPENDRAIN|GPIO_SPEED_50MHz|GPIO_OUTPUT_SET|GPIO_PORTE|GPIO_PIN4)
+// #  define GPIO_nLED_BLUE       /* PE5 */  (GPIO_OUTPUT|GPIO_OPENDRAIN|GPIO_SPEED_50MHz|GPIO_OUTPUT_SET|GPIO_PORTE|GPIO_PIN5)
+#  define GPIO_nLED_RED        /* PB14 */  (GPIO_OUTPUT|GPIO_PUSHPULL|GPIO_SPEED_50MHz|GPIO_OUTPUT_SET|GPIO_PORTB|GPIO_PIN14)
+#  define GPIO_nLED_GREEN      /* PB0 */  (GPIO_OUTPUT|GPIO_PUSHPULL|GPIO_SPEED_50MHz|GPIO_OUTPUT_SET|GPIO_PORTB|GPIO_PIN0)
+#  define GPIO_nLED_BLUE       /* PB7 */  (GPIO_OUTPUT|GPIO_PUSHPULL|GPIO_SPEED_50MHz|GPIO_OUTPUT_SET|GPIO_PORTB|GPIO_PIN7)
 
 #  define BOARD_HAS_CONTROL_STATUS_LEDS      1
 #  define BOARD_OVERLOAD_LED     LED_RED
@@ -137,7 +140,7 @@
 #define PX4_ADC_GPIO  \
 	/* PA0 */  ADC1_GPIO(0),  \
 	/* PA4 */  ADC1_GPIO(4),  \
-	/* PB0 */  ADC1_GPIO(8),  \
+	/* PB0 */  ADC1_GPIO(3),  \
 	/* PB1 */  ADC1_GPIO(9),  \
 	/* PC0 */  ADC1_GPIO(10), \
 	/* PC2 */  ADC1_GPIO(12), \
@@ -149,7 +152,7 @@
 
 #define ADC_SCALED_VDD_3V3_SENSORS1_CHANNEL     /* PA0 */  ADC1_CH(0)
 #define ADC_SCALED_VDD_3V3_SENSORS2_CHANNEL     /* PA4 */  ADC1_CH(4)
-#define ADC_SCALED_VDD_3V3_SENSORS3_CHANNEL     /* PB0 */  ADC1_CH(8)
+#define ADC_SCALED_VDD_3V3_SENSORS3_CHANNEL     /* PB0 */  ADC1_CH(3) //PA3 //ADC1_CH(8)
 #define ADC_SCALED_V5_CHANNEL                   /* PB1 */  ADC1_CH(9)
 #define ADC_ADC1_6V6_CHANNEL                    /* PC0 */  ADC1_CH(10)
 #define ADC_SCALED_VDD_3V3_SENSORS4_CHANNEL     /* PC2 */  ADC1_CH(12)
@@ -203,8 +206,10 @@
  *  The GPIO will be set as input while not armed HW will have external HW Pull UP.
  *  While armed it shall be configured at a GPIO OUT set LOW
  */
-#define GPIO_nARMED_INIT     /* PC12 */  (GPIO_INPUT|GPIO_PULLUP|GPIO_PORTC|GPIO_PIN12)
-#define GPIO_nARMED          /* PC12 */  (GPIO_OUTPUT|GPIO_PUSHPULL|GPIO_SPEED_2MHz|GPIO_OUTPUT_CLEAR|GPIO_PORTC|GPIO_PIN12)
+// #define GPIO_nARMED_INIT     /* PC12 */  (GPIO_INPUT|GPIO_PULLUP|GPIO_PORTC|GPIO_PIN12)
+// #define GPIO_nARMED          /* PC12 */  (GPIO_OUTPUT|GPIO_PUSHPULL|GPIO_SPEED_2MHz|GPIO_OUTPUT_CLEAR|GPIO_PORTC|GPIO_PIN12)
+#define GPIO_nARMED_INIT     /* PE14 */  (GPIO_INPUT|GPIO_PULLUP|GPIO_PORTE|GPIO_PIN14)
+#define GPIO_nARMED          /* PE14 */  (GPIO_OUTPUT|GPIO_PUSHPULL|GPIO_SPEED_2MHz|GPIO_OUTPUT_CLEAR|GPIO_PORTE|GPIO_PIN14)
 
 #if !defined(TRACE_PINS)
 #  define BOARD_INDICATE_EXTERNAL_LOCKOUT_STATE(enabled)  px4_arch_configgpio((enabled) ? GPIO_nARMED : GPIO_nARMED_INIT)
@@ -212,7 +217,7 @@
 #endif
 /* PWM
  */
-#define DIRECT_PWM_OUTPUT_CHANNELS  9
+#define DIRECT_PWM_OUTPUT_CHANNELS  8//9
 
 
 /* Power supply control and monitoring GPIOs */
@@ -393,7 +398,8 @@
 /* This board provides the board_on_reset interface */
 
 #define BOARD_HAS_ON_RESET 1
-
+/*
+// This is the original PX4_GPIO_INIT_LIST
 #define PX4_GPIO_INIT_LIST { \
 		PX4_ADC_GPIO,                     \
 		GPIO_HW_VER_REV_DRIVE,            \
@@ -424,6 +430,42 @@
 		GPIO_nARMED_INIT,                  \
 		PX4_MAKE_GPIO_OUTPUT_CLEAR(GPIO_I2C1_SCL), \
 		PX4_MAKE_GPIO_OUTPUT_CLEAR(GPIO_I2C1_SDA), \
+		PX4_MAKE_GPIO_OUTPUT_CLEAR(GPIO_I2C2_SCL), \
+		PX4_MAKE_GPIO_OUTPUT_CLEAR(GPIO_I2C2_SDA), \
+		PX4_MAKE_GPIO_OUTPUT_CLEAR(GPIO_I2C3_SCL), \
+		PX4_MAKE_GPIO_OUTPUT_CLEAR(GPIO_I2C3_SDA), \
+		PX4_MAKE_GPIO_OUTPUT_CLEAR(GPIO_I2C4_SCL), \
+		PX4_MAKE_GPIO_OUTPUT_CLEAR(GPIO_I2C4_SDA), \
+	}
+*/
+#define PX4_GPIO_INIT_LIST { \
+		PX4_ADC_GPIO,                     \
+		GPIO_HW_VER_REV_DRIVE,            \
+		GPIO_CAN1_TX,                     \
+		GPIO_CAN1_RX,                     \
+		GPIO_CAN2_TX,                     \
+		GPIO_CAN2_RX,                     \
+		GPIO_HEATER_OUTPUT,               \
+		GPIO_nPOWER_IN_A,                 \
+		GPIO_nPOWER_IN_B,                 \
+		GPIO_nPOWER_IN_C,                 \
+		GPIO_VDD_5V_PERIPH_nEN,           \
+		GPIO_VDD_5V_PERIPH_nOC,           \
+		GPIO_VDD_5V_HIPOWER_nEN,          \
+		GPIO_VDD_5V_HIPOWER_nOC,          \
+		GPIO_VDD_3V3_SENSORS4_EN,         \
+		GPIO_VDD_3V3_SPEKTRUM_POWER_EN,   \
+		GPIO_VDD_3V3_SD_CARD_EN,          \
+		GPIO_PH11,                        \
+		GPIO_SYNC,                        \
+		SPI6_nRESET_EXTERNAL1,            \
+		GPIO_ETH_POWER_EN,                \
+		GPIO_NFC_GPIO,                    \
+		GPIO_TONE_ALARM_IDLE,             \
+		GPIO_nSAFETY_SWITCH_LED_OUT_INIT, \
+		GPIO_SAFETY_SWITCH_IN,            \
+		GPIO_PG6,                         \
+		GPIO_nARMED_INIT,                  \
 		PX4_MAKE_GPIO_OUTPUT_CLEAR(GPIO_I2C2_SCL), \
 		PX4_MAKE_GPIO_OUTPUT_CLEAR(GPIO_I2C2_SDA), \
 		PX4_MAKE_GPIO_OUTPUT_CLEAR(GPIO_I2C3_SCL), \

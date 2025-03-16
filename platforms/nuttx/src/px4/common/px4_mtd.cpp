@@ -60,6 +60,7 @@
 
 extern "C" {
 	struct mtd_dev_s *ramtron_initialize(FAR struct spi_dev_s *dev);
+	//struct mtd_dev_s *sst25_initialize(FAR struct spi_dev_s *dev);
 	struct mtd_dev_s *mtd_partition(FAR struct mtd_dev_s *mtd,
 					off_t firstblock, off_t nblocks);
 }
@@ -67,7 +68,7 @@ static int num_instances = 0;
 static int total_blocks = 0;
 static mtd_instance_s *instances[MAX_MTD_INSTANCES] = {};
 
-
+#if defined(CONFIG_MTD_RAMTRON)
 static int ramtron_attach(mtd_instance_s &instance)
 {
 #if !defined(CONFIG_MTD_RAMTRON)
@@ -77,7 +78,8 @@ static int ramtron_attach(mtd_instance_s &instance)
 
 	/* start the RAMTRON driver at 30MHz */
 
-	unsigned long spi_speed_hz = 30'000'000;
+	//unsigned long spi_speed_hz = 30'000'000;
+	unsigned long spi_speed_hz = 10'000'000;
 
 	for (int i = 0; spi_speed_hz > 0; i++) {
 		/* initialize the right spi */
@@ -130,7 +132,81 @@ static int ramtron_attach(mtd_instance_s &instance)
 	return 0;
 #endif
 }
+#endif
 
+#if defined(CONFIG_MTD_SST25)
+static int sst25_attach(mtd_instance_s &instance)
+{
+#if !defined(CONFIG_MTD_SST25)
+	PX4_ERR("Misconfiguration CONFIG_MTD_SST25 not set");
+	return ENXIO;
+#else
+
+	/* start the SST25 driver at 30MHz */
+
+	//unsigned long spi_speed_hz = 30'000'000;
+	unsigned long spi_speed_hz = 10000000;
+
+	for (int i = 0; spi_speed_hz > 0; i++) {
+		/* initialize the right spi */
+
+		//printf("#Donebyme# px4_find_spi_bus(instance.devid) = %lu\r\n", instance.devid);
+		struct spi_dev_s *spi = px4_spibus_initialize(px4_find_spi_bus(instance.devid));
+
+		if (spi == nullptr) {
+			PX4_ERR("failed to locate spi bus");
+			return -ENXIO;
+		}
+
+		/* this resets the spi bus, set correct bus speed again */
+		SPI_LOCK(spi, true);
+		SPI_SETFREQUENCY(spi, spi_speed_hz);
+		SPI_SETBITS(spi, 8);
+		//SPI_SETMODE(spi, SPIDEV_MODE3);
+		SPI_SETMODE(spi, SPIDEV_MODE0);
+		SPI_SELECT(spi, instance.devid, false);
+		SPI_LOCK(spi, false);
+
+		instance.mtd_dev = sst25_initialize(spi);
+
+		if (instance.mtd_dev) {
+			/* abort on first valid result */
+			if (i > 0) {
+				PX4_WARN("mtd needed %d attempts to attach", i + 1);
+				PX4_INFO("spi_speed_hz = %lu\r\n", spi_speed_hz);
+			}
+			break;
+		}
+
+		// try reducing speed for next attempt
+		spi_speed_hz -= 1'000'000;
+		if(spi_speed_hz == 0) {
+			PX4_ERR("spi_speed_hz == 0");
+		}
+		px4_usleep(10000);
+	}
+
+	/* if last attempt is still unsuccessful, abort */
+	if (instance.mtd_dev == nullptr) {
+		PX4_ERR("failed to initialize mtd driver");
+		return -EIO;
+	}
+
+	int ret = instance.mtd_dev->ioctl(instance.mtd_dev, MTDIOC_SETSPEED, spi_speed_hz);
+
+	if (ret != OK) {
+		// FIXME: From the previous warning call, it looked like this should have been fatal error instead. Tried
+		// that but setting the bus speed does fail all the time. Which was then exiting and the board would
+		// not run correctly. So changed to PX4_WARN.
+		//PX4_WARN("failed to set bus speed");
+		// Add by me
+		PX4_WARN("failed to set bus speed (ret=%d)", ret);
+	}
+
+	return 0;
+#endif
+}
+#endif
 
 static int at24xxx_attach(mtd_instance_s &instance)
 {
@@ -242,12 +318,16 @@ mtd_instance_s **px4_mtd_get_instances(unsigned int *count)
 }
 
 // Define the default FRAM usage
-#if !defined(CONFIG_MTD_RAMTRON)
+#if !defined(CONFIG_MTD_RAMTRON) && !defined(CONFIG_MTD_SST25)
+
+#pragma message ("#Donebyme# Using default_mtd_config\r\n")
 
 static const px4_mtd_manifest_t default_mtd_config = {
 };
 
-#else
+#elif defined(CONFIG_MTD_RAMTRON)
+
+#pragma message ("#Donebyme# Using CONFIG_MTD_RAMTRON configuration\r\n")
 
 const px4_mft_device_t spifram  = {             // FM25V02A on FMUM native: 32K X 8, emulated as (1024 Blocks of 32)
 	.bus_type = px4_mft_device_t::SPI,
@@ -266,6 +346,34 @@ const px4_mtd_entry_t fram = {
 	},
 };
 
+
+static const px4_mtd_manifest_t default_mtd_config = {
+	.nconfigs   = 1,
+	.entries = {
+		&fram,
+	}
+};
+
+#elif defined(CONFIG_MTD_SST25)
+
+#pragma message ("#Donebyme# Using CONFIG_MTD_SST25 configuration\r\n")
+
+const px4_mft_device_t spifram  = {             // SST25VF016
+	.bus_type = px4_mft_device_t::SPI,
+	.devid    = SPIDEV_FLASH(0)
+};
+
+const px4_mtd_entry_t fram = {
+	.device = &spifram,
+	.npart = 1,
+	.partd = {
+		{
+			.type = MTD_PARAMETERS,
+			.path = "/fs/mtd_params",
+			.nblocks = 512 //(32768 / (1 << CONFIG_RAMTRON_EMULATE_SECTOR_SHIFT))
+		}
+	},
+};
 
 static const px4_mtd_manifest_t default_mtd_config = {
 	.nconfigs   = 1,
@@ -347,10 +455,18 @@ memoryout:
 		}
 
 		if (mtd_list->entries[num_entry]->device->bus_type == px4_mft_device_t::I2C) {
+			PX4_INFO("Attaching EPPROM(s)");
 			rv = at24xxx_attach(*instances[i]);
 
 		} else if (mtd_list->entries[num_entry]->device->bus_type == px4_mft_device_t::SPI) {
+			#if defined(CONFIG_MTD_RAMTRON)
+			PX4_INFO("Attaching Ramtron FRAM");
 			rv = ramtron_attach(*instances[i]);
+			#elif defined(CONFIG_MTD_SST25)
+			PX4_INFO("Attaching SST25 Flash");
+			rv = sst25_attach(*instances[i]);
+			#endif
+			if (rv != 0) PX4_ERR("Flash/FRAM attach error (rv = %i)", rv);
 #if defined(HAS_FLEXSPI)
 
 		} else if (mtd_list->entries[num_entry]->device->bus_type == px4_mft_device_t::FLEXSPI) {

@@ -128,7 +128,9 @@ PX4IO_Uploader::upload(const char *filenames[])
 			break;
 
 		} else {
+			log("Enter to sleep (px4_usleep(10000)) [i=%d] ...", i);
 			px4_usleep(10000);
+			log("Return from sleep ...");
 		}
 	}
 

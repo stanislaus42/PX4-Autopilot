@@ -103,13 +103,17 @@ static void phy_set_led(int led, bool state)
 {
 	/* Drive Low to switch on */
 
-	stm32_gpiowrite(g_ledmap[led], !state);
+	//stm32_gpiowrite(g_ledmap[led], !state);
+	// modified by me (byme)
+	stm32_gpiowrite(g_ledmap[led], state);
 }
 
 static bool phy_get_led(int led)
 {
 	/* If Low it is on */
-	return !stm32_gpioread(g_ledmap[led]);
+	//return !stm32_gpioread(g_ledmap[led]);
+	// modified by me (byme)
+	return stm32_gpioread(g_ledmap[led]);
 }
 
 __EXPORT void led_on(int led)

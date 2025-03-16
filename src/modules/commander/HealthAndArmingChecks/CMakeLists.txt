@@ -42,7 +42,6 @@ px4_add_library(health_and_arming_checks
 	checks/batteryCheck.cpp
 	checks/cpuResourceCheck.cpp
 	checks/distanceSensorChecks.cpp
-	checks/opticalFlowCheck.cpp
 	checks/escCheck.cpp
 	checks/estimatorCheck.cpp
 	checks/failureDetectorCheck.cpp

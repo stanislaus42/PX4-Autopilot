@@ -121,6 +121,7 @@ extern "C" __EXPORT int bsondump_main(int argc, char *argv[])
 
 		const char *file_name = argv[2];
 		int source_fd = open(file_name, O_RDONLY);
+		//printf("--> MYDEBUG: (if) file_name = %s\r\n", file_name);
 
 		if (source_fd < 0) {
 			PX4_ERR("open '%s' failed (%i)", file_name, errno);
@@ -148,6 +149,7 @@ extern "C" __EXPORT int bsondump_main(int argc, char *argv[])
 			PX4_WARN("Mismatch in BSON sizes and saved size is zero. Setting document size to decoded size.");
 
 			source_fd = open(file_name, O_RDWR);
+			//printf("--> MYDEBUG: (O_RDWR) file_name = %s\r\n", file_name);
 
 			if (source_fd == -1) {
 				perror("Failed to re-open source file for reading and writing");
@@ -182,6 +184,7 @@ extern "C" __EXPORT int bsondump_main(int argc, char *argv[])
 		const char *file_name = argv[1];
 
 		int fd = open(file_name, O_RDONLY);
+		//printf("--> MYDEBUG: (else) file_name = %s\r\n", file_name);
 
 		if (fd < 0) {
 			PX4_ERR("open '%s' failed (%i)", file_name, errno);

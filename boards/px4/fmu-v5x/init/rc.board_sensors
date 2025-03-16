@@ -11,7 +11,7 @@ then
 fi
 if param compare -s ADC_ADS1115_EN 1
 then
-	ads1115 start -X
+	#ads1115 start -X
 	board_adc start -n
 else
 	board_adc start
@@ -20,6 +20,7 @@ fi
 
 if param compare SENS_EN_INA226 1
 then
+	echo "      # Using Digital Power Monitor INA226"
 	# Start Digital power monitors
 	ina226 -X -b 1 -t 1 -k start
 
@@ -31,6 +32,7 @@ fi
 
 if param compare SENS_EN_INA228 1
 then
+	echo "      # Using Digital Power Monitor INA228"
 	# Start Digital power monitors
 	ina228 -X -b 1 -t 1 -k start
 	if [ $HAVE_PM2 = yes ]
@@ -41,6 +43,7 @@ fi
 
 if param compare SENS_EN_INA238 1
 then
+	echo "      # Using Digital Power Monitor INA238"
 	# Start Digital power monitors
 	ina238 -X -b 1 -t 1 -k start
 	if [ $HAVE_PM2 = yes ]
@@ -52,66 +55,97 @@ fi
 if ver hwbasecmp 008 009 00a 010 011
 then
 	#SKYNODE base fmu board orientation
+	echo "      # SKYNODE base fmu board orientation"
 
 	if ver hwtypecmp V5X000 V5X001
 	then
 		# Internal SPI BMI088
-		bmi088 -A -R 2 -s start
-		bmi088 -G -R 2 -s start
+		echo "      # Internal SPI BMI088"
+		#bmi088 -A -R 2 -s start
+		#bmi088 -G -R 2 -s start
 	else
 		# Internal SPI bus ICM20649
-		icm20649 -s -R 4 start
+		echo "      # Internal SPI bus ICM20649"
+		#icm20649 -s -R 4 start
 	fi
 
 	# Internal SPI bus ICM42688p
-	icm42688p -R 4 -s start
+	#icm42688p -R 4 -s start
 
 	# Internal SPI bus ICM-20602 (hard-mounted)
-	icm20602 -R 8 -s start
+	#icm20602 -R 8 -s start
 
 	# Internal magnetometer on I2c
-	bmm150 -I -R 6 start
+	#bmm150 -I -R 6 start
 
 	# Auto start power monitors
-	pm_selector_auterion start
+	#pm_selector_auterion start
 
 else
 	#FMUv5Xbase board orientation
+	echo "      # FMUv5Xbase board orientation"
 
 	if ver hwtypecmp V5X000 V5X001
 	then
 		# Internal SPI BMI088
-		bmi088 -A -R 4 -s start
-		bmi088 -G -R 4 -s start
+		echo "      # Internal SPI BMI088"
+		#bmi088 -A -R 4 -s start
+		#bmi088 -G -R 4 -s start
 	else
 		# Internal SPI bus ICM20649
-		icm20649 -s -R 6 start
+		echo "      # Internal SPI bus ICM20649"
+		#icm20649 -s -R 6 start
 	fi
 
 	# Internal SPI bus ICM42688p
-	icm42688p -R 6 -s start
+	#icm42688p -R 6 -s start
 
 	# Internal SPI bus ICM-20602 (hard-mounted)
-	icm20602 -R 10 -s start
+	#icm20602 -R 10 -s start
 
 	# Internal magnetometer on I2c
-	bmm150 -I start
+	#bmm150 -I start
+
+	##echo "      # Starting BMP280"
+	##bmp280 -X -b 2 start
+
+	echo "      # Starting LIS3MDL"
+	# lis3mdl -X -b 1 start
+	# lis3mdl -I -b 4 start
+
+	echo "      # Starting LPS25H"
+	lps25h -X -b 1 start
+
+	# echo "      # Starting bmp280 (I2C)"
+	# bmp280 -X -b 2 start
+
+	# echo "      # Starting mpu9250_i2c"
+	# mpu9250_i2c -X -b 2 start
+
+	echo "      # Starting mpu9250 (SPI)"
+	mpu9250 -s -b 6 start
+
+	echo "      # Starting bmp280 (SPI)"
+	bmp280 -s -b 6 start
 fi
 
 # External compass on GPS1/I2C1 (the 3rd external bus): standard Holybro Pixhawk 4 or CUAV V5 GPS/compass puck (with lights, safety button, and buzzer)
-ist8310 -X -b 1 -R 10 start
+echo "      # External compass ist8310 is disabled"
+#ist8310 -X -b 1 -R 10 start
 
 # Possible internal Baro
 
 # Disable startup of internal baros if param is set to false
 if param compare SENS_INT_BARO_EN 1
 then
-	bmp388 -I -a 0x77 start
+	echo "      # param compare SENS_INT_BARO_EN 1"
+	#bmp388 -I -a 0x77 start
 	if ver hwtypecmp V5X000
 	then
-		bmp388 -I start
+		echo "      # ver hwtypecmp V5X000"
+		#bmp388 -I start
 	else
-		bmp388 -X -b 2 start
+		#bmp388 -X -b 2 start
 	fi
 
 fi

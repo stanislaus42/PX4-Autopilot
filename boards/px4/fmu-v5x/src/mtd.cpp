@@ -37,10 +37,16 @@
 #include <nuttx/spi/spi.h>
 #include <px4_platform_common/px4_manifest.h>
 //                                                              KiB BS    nB
-static const px4_mft_device_t spi5 = {             // FM25V02A on FMUM native: 32K X 8, emulated as (1024 Blocks of 32)
+// static const px4_mft_device_t spi5 = {             // FM25V02A on FMUM native: 32K X 8, emulated as (1024 Blocks of 32)
+// 	.bus_type = px4_mft_device_t::SPI,
+// 	.devid    = SPIDEV_FLASH(0)
+// };
+
+static const px4_mft_device_t spi1 = {             // SST25VF016 Flash
 	.bus_type = px4_mft_device_t::SPI,
 	.devid    = SPIDEV_FLASH(0)
 };
+
 static const px4_mft_device_t i2c3 = {             // 24LC64T on Base  8K 32 X 256
 	.bus_type = px4_mft_device_t::I2C,
 	.devid    = PX4_MK_I2C_DEVID(3, 0x51)
@@ -50,9 +56,25 @@ static const px4_mft_device_t i2c4 = {             // 24LC64T on IMU   8K 32 X 2
 	.devid    =  PX4_MK_I2C_DEVID(4, 0x50)
 };
 
+// base eeprom (prev. i2c3)
+static const px4_mft_device_t i2c4_0x51 = {             // 24LC64T on IMU   8K 32 X 256
+	.bus_type =  px4_mft_device_t::I2C,
+	.devid    =  PX4_MK_I2C_DEVID(4, 0x51)
+};
+static const px4_mft_device_t i2c4_0x50 = {             // 24LC64T on IMU   8K 32 X 256
+	.bus_type =  px4_mft_device_t::I2C,
+	.devid    =  PX4_MK_I2C_DEVID(4, 0x50)
+};
 
+
+static const px4_mft_device_t i2c2 = {
+	.bus_type =  px4_mft_device_t::I2C,
+	.devid    =  PX4_MK_I2C_DEVID(2, 0x50)
+};
+
+//#if defined(CONFIG_MTD_RAMTRON)
 static const px4_mtd_entry_t fmum_fram = {
-	.device = &spi5,
+	.device = &spi1,//&spi5,
 	.npart = 1,
 	.partd = {
 		{
@@ -62,9 +84,24 @@ static const px4_mtd_entry_t fmum_fram = {
 		}
 	},
 };
+//#endif
+
+// static const px4_mtd_entry_t fmum_flash = {
+// 	.device = &spi1,
+// 	.npart = 1,
+// 	.partd = {
+// 		{
+// 			.type = MTD_PARAMETERS,
+// 			.path = "/fs/mtd_params",
+// 			//.nblocks = (32768 / (1 << CONFIG_RAMTRON_EMULATE_SECTOR_SHIFT))
+// 			.nblocks = 512 // 512
+// 		}
+// 	},
+// };
 
 static const px4_mtd_entry_t base_eeprom = {
-	.device = &i2c3,
+	//.device = &i2c3,
+	.device = &i2c4_0x51,
 	.npart = 2,
 	.partd = {
 		{
@@ -82,7 +119,9 @@ static const px4_mtd_entry_t base_eeprom = {
 };
 
 static const px4_mtd_entry_t imu_eeprom = {
-	.device = &i2c4,
+	//.device = &i2c4,
+	// .device = &i2c2, // not wired
+	.device = &i2c4_0x50,
 	.npart = 3,
 	.partd = {
 		{

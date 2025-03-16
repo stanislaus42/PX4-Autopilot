@@ -205,6 +205,13 @@ private:
 	)
 
 	/**
+	 * Transforms the sensor orientation into a yaw in the local frame
+	 * @param distance_sensor, distance sensor message
+	 * @param angle_offset, sensor body frame offset
+	 */
+	float _sensorOrientationToYawOffset(const distance_sensor_s &distance_sensor, float angle_offset) const;
+
+	/**
 	 * Computes collision free setpoints
 	 * @param setpoint, setpoint before collision prevention intervention
 	 * @param curr_pos, current vehicle position
@@ -231,4 +238,6 @@ private:
 	 */
 	void _publishVehicleCmdDoLoiter();
 
+	static float _wrap_360(const float f);
+	static int _wrap_bin(int i);
 };

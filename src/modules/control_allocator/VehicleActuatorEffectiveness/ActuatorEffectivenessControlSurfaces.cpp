@@ -69,10 +69,14 @@ void ActuatorEffectivenessControlSurfaces::updateParams()
 {
 	ModuleParams::updateParams();
 
-	if (param_get(_count_handle, &_count) != PX4_OK) {
+	int32_t count = 0;
+
+	if (param_get(_count_handle, &count) != 0) {
 		PX4_ERR("param_get failed");
 		return;
 	}
+
+	_count = count;
 
 	for (int i = 0; i < _count; i++) {
 		param_get(_param_handles[i].type, (int32_t *)&_params[i].type);

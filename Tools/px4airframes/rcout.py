@@ -47,7 +47,7 @@ class RCOutput():
                     continue
 
                 if post_start:
-                    # Path to post-start script
+                    # Path to post-start sript
                     path = airframe.GetPostPath()
                 else:
                     # Path to start script

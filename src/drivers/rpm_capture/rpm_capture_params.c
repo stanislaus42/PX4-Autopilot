@@ -32,9 +32,9 @@
  ****************************************************************************/
 
 /**
- * RPM capture enable
+ * RPM Capture Enable
  *
- * Enables the RPM capture module to estimate RPM from pulses detected on a PWM pin configured as "RPM Input".
+ * Enables the RPM capture module on FMU channel 5.
  *
  * @boolean
  * @group System

@@ -93,6 +93,9 @@
 #define CONFIG_LOW_COMP_QU_AFTER4    0x02
 #define CONFIG_LOW_COMP_QU_DISABLE    0x03
 
+#define CONFIG_RESET_VALUE_HIGH 0x85
+#define CONFIG_RESET_VALUE_LOW 0x83
+
 using namespace time_literals;
 
 /*
@@ -124,39 +127,35 @@ protected:
 
 private:
 
-	uORB::PublicationMulti<adc_report_s> _to_adc_report{ORB_ID(adc_report)};
+	uORB::PublicationMulti<adc_report_s>		_to_adc_report{ORB_ID(adc_report)};
 
-	static const hrt_abstime SAMPLE_INTERVAL{50_ms};
+	static const hrt_abstime	SAMPLE_INTERVAL{50_ms};
 
 	adc_report_s _adc_report{};
 
-	perf_counter_t _cycle_perf;
-	perf_counter_t _comms_errors;
+	perf_counter_t			_cycle_perf;
 
-	uint8_t _channel_cycle_mask{0};
+	int     _channel_cycle_count{0};
 
-	static constexpr uint8_t MAX_READY_COUNTER{20};
-	uint8_t _ready_counter{MAX_READY_COUNTER};
+	bool    _reported_ready_last_cycle{false};
 
 	// ADS1115 logic part
-	enum class Channel : uint8_t {
-		A0 = CONFIG_HIGH_MUX_P0NG,
-		A1 = CONFIG_HIGH_MUX_P1NG,
-		A2 = CONFIG_HIGH_MUX_P2NG,
-		A3 = CONFIG_HIGH_MUX_P3NG,
-		Invalid = 0xff,
+	enum ChannelSelection {
+		Invalid = -1, A0 = 0, A1, A2, A3
 	};
-	constexpr unsigned ch2u(Channel ch) { return (unsigned(ch) >> 4) & 0b11u; }
-	constexpr Channel u2ch(unsigned ch) { return Channel((ch << 4) | CONFIG_HIGH_MUX_P0NG); }
-	// Set the channel and start a conversion
-	int readChannel(Channel ch);
-	// return 1 if sample result is valid else 0 or -1 if I2C transaction failed
-	int isSampleReady();
+	/* set multiplexer to specific channel */
+	int setChannel(ChannelSelection ch);
+	/* return true if sample result is valid */
+	bool isSampleReady();
 	/*
 	 * get adc sample. return the channel being measured.
 	 * Invalid indicates sample failure.
 	 */
-	Channel getMeasurement(int16_t *value);
+	ChannelSelection getMeasurement(int16_t *value);
+	/*
+	 * get adc sample and automatically switch to next channel and start another measurement
+	 */
+	ChannelSelection cycleMeasure(int16_t *value);
 
 	int readReg(uint8_t addr, uint8_t *buf, size_t len);
 

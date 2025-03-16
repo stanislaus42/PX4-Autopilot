@@ -34,7 +34,6 @@
 #include "GhstRc.hpp"
 
 #include <termios.h>
-#include <math.h>
 
 GhstRc::GhstRc(const char *device) :
 	ModuleParams(nullptr),
@@ -175,18 +174,16 @@ void GhstRc::Run()
 		if (newBytes > 0) {
 			uint16_t raw_rc_values[input_rc_s::RC_INPUT_MAX_CHANNELS] {};
 			uint16_t raw_rc_count = 0;
-			ghstLinkStatistics_t link_stats = { .rssi_pct = -1, .rssi_dbm = NAN, .link_quality = 0 };
+			int8_t ghst_rssi = -1;
 
-			if (ghst_parse(cycle_timestamp, &rcs_buf[0], newBytes, &raw_rc_values[0], &link_stats,
+			if (ghst_parse(cycle_timestamp, &rcs_buf[0], newBytes, &raw_rc_values[0], &ghst_rssi,
 				       &raw_rc_count, input_rc_s::RC_INPUT_MAX_CHANNELS)
 			   ) {
 				// we have a new GHST frame. Publish it.
 				input_rc_s input_rc{};
 				input_rc.timestamp_last_signal = cycle_timestamp;
 				input_rc.channel_count = math::constrain(raw_rc_count, (uint16_t)0, (uint16_t)input_rc_s::RC_INPUT_MAX_CHANNELS);
-				input_rc.rssi = link_stats.rssi_pct;
-				input_rc.link_quality = link_stats.link_quality;
-				input_rc.rssi_dbm = link_stats.rssi_dbm;
+				input_rc.rssi = ghst_rssi;
 				input_rc.input_source = input_rc_s::RC_INPUT_SOURCE_PX4FMU_GHST;
 
 				unsigned valid_chans = 0;
@@ -203,10 +200,12 @@ void GhstRc::Run()
 
 				if (valid_chans == 0) {
 					input_rc.rssi = 0;
-					// can't force link quality to zero here, receiver takes care of this
 				}
 
 				input_rc.rc_lost = (valid_chans == 0);
+
+				input_rc.link_quality = -1;
+				input_rc.rssi_dbm = NAN;
 
 				input_rc.timestamp = hrt_absolute_time();
 				_input_rc_pub.publish(input_rc);

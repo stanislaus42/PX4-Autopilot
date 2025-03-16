@@ -160,10 +160,12 @@ bool MPU9250::StoreCheckedRegisterValue(Register reg)
 
 int MPU9250::probe()
 {
+	printf("Using MPU-9255!\r\n");
 	const uint8_t whoami = RegisterRead(Register::WHO_AM_I);
 
 	if (whoami != WHOAMI) {
 		DEVICE_DEBUG("unexpected WHO_AM_I 0x%02x", whoami);
+		printf("unexpected WHO_AM_I 0x%02x\r\n", whoami);
 		return PX4_ERROR;
 	}
 

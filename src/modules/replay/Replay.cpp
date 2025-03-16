@@ -721,6 +721,10 @@ Replay::nextDataMessage(std::ifstream &file, Subscription &subscription, int msg
 		}
 
 		switch (message_header.msg_type) {
+		case (int)ULogMessageType::ADD_LOGGED_MSG:
+			readAndAddSubscription(file, message_header.msg_size);
+			break;
+
 		case (int)ULogMessageType::DATA:
 			file.read((char *)&file_msg_id, sizeof(file_msg_id));
 
@@ -747,7 +751,6 @@ Replay::nextDataMessage(std::ifstream &file, Subscription &subscription, int msg
 			break;
 
 		case (int)ULogMessageType::REMOVE_LOGGED_MSG: //skip these
-		case (int)ULogMessageType::ADD_LOGGED_MSG:
 		case (int)ULogMessageType::PARAMETER:
 		case (int)ULogMessageType::DROPOUT:
 		case (int)ULogMessageType::INFO:
@@ -904,26 +907,19 @@ Replay::run()
 	ulog_message_header_s message_header;
 	replay_file.seekg(_data_section_start);
 
-	while (true) {
-		//we are in the Definition & Data Section Message Header section
+	//we know the next message must be an ADD_LOGGED_MSG
+	ReadAndAndAddSubResult res;
+
+	do {
 		replay_file.read((char *)&message_header, ULOG_MSG_HEADER_LEN);
+		res = readAndAddSubscription(replay_file, message_header.msg_size);
 
-		if (!replay_file) {
-			break;
+		if (res == ReadAndAndAddSubResult::kFailure) {
+			PX4_ERR("Failed to read subscription");
+			return;
 		}
 
-		if (message_header.msg_type == (int)ULogMessageType::ADD_LOGGED_MSG) {
-			readAndAddSubscription(replay_file, message_header.msg_size);
-
-		} else if (message_header.msg_type == (int)ULogMessageType::DATA) {
-			// End of Definition & Data Section Message Header section
-			break;
-
-		} else {
-			// Not important for now, skip
-			replay_file.seekg(message_header.msg_size, ios::cur);
-		}
-	}
+	} while (res != ReadAndAndAddSubResult::kSuccess);
 
 	const uint64_t timestamp_offset = getTimestampOffset();
 	uint32_t nr_published_messages = 0;

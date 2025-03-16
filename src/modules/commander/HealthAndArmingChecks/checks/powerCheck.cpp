@@ -36,14 +36,6 @@
 
 using namespace time_literals;
 
-PowerChecks::PowerChecks()
-{
-	_voltage_low_hysteresis.set_hysteresis_time_from(false, 0_s);
-	_voltage_low_hysteresis.set_hysteresis_time_from(true, 15_s);
-	_voltage_high_hysteresis.set_hysteresis_time_from(false, 0_s);
-	_voltage_high_hysteresis.set_hysteresis_time_from(true, 15_s);
-}
-
 void PowerChecks::checkAndReport(const Context &context, Report &reporter)
 {
 	if (circuit_breaker_enabled_by_val(_param_cbrk_supply_chk.get(), CBRK_SUPPLY_CHK_KEY)) {
@@ -85,11 +77,7 @@ void PowerChecks::checkAndReport(const Context &context, Report &reporter)
 			const float low_error_threshold = 4.7f;
 			const float high_error_threshold = 5.4f;
 
-			const auto now = hrt_absolute_time();
-			_voltage_low_hysteresis.set_state_and_update(avionics_power_rail_voltage < low_error_threshold, now);
-			_voltage_high_hysteresis.set_state_and_update(avionics_power_rail_voltage > high_error_threshold, now);
-
-			if (_voltage_low_hysteresis.get_state()) {
+			if (avionics_power_rail_voltage < low_error_threshold) {
 
 				/* EVENT
 				 * @description
@@ -108,7 +96,7 @@ void PowerChecks::checkAndReport(const Context &context, Report &reporter)
 							     (double)avionics_power_rail_voltage);
 				}
 
-			} else if (_voltage_high_hysteresis.get_state()) {
+			} else if (avionics_power_rail_voltage > high_error_threshold) {
 				/* EVENT
 				 * @description
 				 * Check the voltage supply to the FMU, it must be below {2:.2} Volt.

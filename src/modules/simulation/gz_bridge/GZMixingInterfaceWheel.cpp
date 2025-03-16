@@ -51,8 +51,6 @@ bool GZMixingInterfaceWheel::init(const std::string &model_name)
 		return false;
 	}
 
-	pthread_mutex_init(&_node_mutex, nullptr);
-
 	_wheel_encoders_pub.advertise();
 
 	ScheduleNow();

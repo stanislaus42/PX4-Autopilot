@@ -61,7 +61,8 @@ static constexpr uint32_t SPI_SPEED = 1 * 1000 * 1000;
 static constexpr uint32_t SPI_SPEED_SENSOR = 10 * 1000 * 1000; // 20MHz for reading sensor and interrupt registers
 static constexpr uint8_t DIR_READ = 0x80;
 
-static constexpr uint8_t WHOAMI = 0x71;
+//static constexpr uint8_t WHOAMI = 0x71;
+static constexpr uint8_t WHOAMI = 0x73; // MPU-9255
 
 static constexpr float TEMPERATURE_SENSITIVITY = 333.87f; // LSB/C
 static constexpr float TEMPERATURE_OFFSET = 21.f; // C

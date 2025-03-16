@@ -56,13 +56,38 @@
 
 /* On-board crystal frequency is 24MHz (HSE) */
 
-#define STM32_BOARD_XTAL        24000000ul
+//#define STM32_BOARD_XTAL        24000000ul
+#define STM32_BOARD_XTAL        8000000ul
+
+//#define STM32_HSI_FREQUENCY     8000000ul
+//#define STM32_LSI_FREQUENCY     40000            /* Between 30kHz and 60kHz */
+#define STM32_HSE_FREQUENCY     STM32_BOARD_XTAL
+//#define STM32_LSE_FREQUENCY     32768            /* X2 on board */
 
 /* Use the HSE output as the system clock */
 
-#define STM32_SYSCLK_SW         RCC_CFGR_SW_HSE
-#define STM32_SYSCLK_SWS        RCC_CFGR_SWS_HSE
-#define STM32_SYSCLK_FREQUENCY  STM32_BOARD_XTAL
+// #define STM32_SYSCLK_SW         RCC_CFGR_SW_HSE
+// #define STM32_SYSCLK_SWS        RCC_CFGR_SWS_HSE
+// #define STM32_SYSCLK_FREQUENCY  STM32_BOARD_XTAL
+
+// Added by me
+/* PLL source is HSE/1, PLL multipler is 3:
+ *   PLL frequency is 8MHz (XTAL) x 3 = 24MHz
+ */
+
+#define STM32_CFGR_PLLSRC       RCC_CFGR_PLLSRC
+#define STM32_CFGR_PLLXTPRE     0
+#define STM32_CFGR2_PREDIV1	STM32_CFGR_PLLXTPRE
+#define STM32_CFGR_PLLMUL       RCC_CFGR_PLLMUL_CLKx3
+#define STM32_PLL_FREQUENCY     (3*STM32_BOARD_XTAL)
+
+/* Use the PLL and set the SYSCLK source to be the PLL */
+
+#define STM32_SYSCLK_SW         RCC_CFGR_SW_PLL
+#define STM32_SYSCLK_SWS        RCC_CFGR_SWS_PLL
+#define STM32_SYSCLK_FREQUENCY  STM32_PLL_FREQUENCY
+
+// End added by me
 
 /* AHB clock (HCLK) is SYSCLK (24MHz) */
 

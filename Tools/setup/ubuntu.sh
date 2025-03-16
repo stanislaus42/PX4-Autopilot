@@ -116,7 +116,6 @@ if [[ $INSTALL_NUTTX == "true" ]]; then
 		binutils-dev \
 		bison \
 		build-essential \
-		curl \
 		flex \
 		g++-multilib \
 		gcc-arm-none-eabi \
