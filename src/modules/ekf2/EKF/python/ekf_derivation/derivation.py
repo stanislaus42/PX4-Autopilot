@@ -354,8 +354,10 @@ def compute_sideslip_innov_and_innov_var(
 
     return (innov, innov_var)
 
-def compute_sideslip_h(
+def compute_sideslip_h_and_k(
         state: VState,
+        P: MTangent,
+        innov_var: sf.Scalar,
         epsilon: sf.Scalar
 ) -> (VTangent, VTangent):
 
@@ -364,7 +366,9 @@ def compute_sideslip_h(
 
     H = jacobian_chain_rule(sideslip_pred, state)
 
-    return (H.T)
+    K = P * H.T / sf.Max(innov_var, epsilon)
+
+    return (H.T, K)
 
 def predict_vel_body(
         state: VState
@@ -735,7 +739,7 @@ if not args.disable_wind:
     generate_px4_function(compute_airspeed_innov_and_innov_var, output_names=["innov", "innov_var"])
     generate_px4_function(compute_drag_x_innov_var_and_h, output_names=["innov_var", "Hx"])
     generate_px4_function(compute_drag_y_innov_var_and_h, output_names=["innov_var", "Hy"])
-    generate_px4_function(compute_sideslip_h, output_names=None)
+    generate_px4_function(compute_sideslip_h_and_k, output_names=["H", "K"])
     generate_px4_function(compute_sideslip_innov_and_innov_var, output_names=["innov", "innov_var"])
     generate_px4_function(compute_wind_init_and_cov_from_airspeed, output_names=["wind", "P_wind"])
     generate_px4_function(compute_wind_init_and_cov_from_wind_speed_and_direction, output_names=["wind", "P_wind"])

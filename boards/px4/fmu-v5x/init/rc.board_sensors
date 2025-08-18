@@ -87,13 +87,15 @@ else
 
 	if ver hwtypecmp V5X000 V5X001
 	then
+		echo "      # Board HW is V5X000 or V5X001"
 		# Internal SPI BMI088
-		echo "      # Internal SPI BMI088"
+		#echo "      # Internal SPI BMI088"
 		#bmi088 -A -R 4 -s start
 		#bmi088 -G -R 4 -s start
 	else
+		echo "      # Board HW others (not V5X000 or V5X001)"
 		# Internal SPI bus ICM20649
-		echo "      # Internal SPI bus ICM20649"
+		#echo "      # Internal SPI bus ICM20649"
 		#icm20649 -s -R 6 start
 	fi
 
@@ -113,7 +115,8 @@ else
 	# lis3mdl -X -b 1 start
 	# lis3mdl -I -b 4 start
 
-	echo "      # Starting LPS25H"
+	# echo "      # Starting LPS25H"
+	echo "      # Disabled LPS25H"
 	lps25h -X -b 1 start
 
 	# echo "      # Starting bmp280 (I2C)"
@@ -122,11 +125,16 @@ else
 	# echo "      # Starting mpu9250_i2c"
 	# mpu9250_i2c -X -b 2 start
 
-	echo "      # Starting mpu9250 (SPI)"
+	#echo "      # Starting mpu9250 (SPI)"
+	echo "      # Disabled mpu9250 (SPI)"
 	mpu9250 -s -b 6 start
 
-	echo "      # Starting bmp280 (SPI)"
+	# echo "      # Starting bmp280 (SPI)"
+	echo "      # Disabled bmp280 (SPI)"
 	bmp280 -s -b 6 start
+
+	# echo "      # Starting eulernav_bahrs on /dev/ttyS1"
+	# eulernav_bahrs start -d /dev/ttyS1
 fi
 
 # External compass on GPS1/I2C1 (the 3rd external bus): standard Holybro Pixhawk 4 or CUAV V5 GPS/compass puck (with lights, safety button, and buzzer)
@@ -138,11 +146,11 @@ echo "      # External compass ist8310 is disabled"
 # Disable startup of internal baros if param is set to false
 if param compare SENS_INT_BARO_EN 1
 then
-	echo "      # param compare SENS_INT_BARO_EN 1"
+	# echo "      # param compare SENS_INT_BARO_EN 1"
 	#bmp388 -I -a 0x77 start
 	if ver hwtypecmp V5X000
 	then
-		echo "      # ver hwtypecmp V5X000"
+		# echo "      # ver hwtypecmp V5X000"
 		#bmp388 -I start
 	else
 		#bmp388 -X -b 2 start

@@ -43,14 +43,14 @@
 
 #include "ekf.h"
 #include <ekf_derivation/generated/compute_sideslip_innov_and_innov_var.h>
-#include <ekf_derivation/generated/compute_sideslip_h.h>
+#include <ekf_derivation/generated/compute_sideslip_h_and_k.h>
 
 #include <mathlib/mathlib.h>
 
 void Ekf::controlBetaFusion(const imuSample &imu_delayed)
 {
 	_control_status.flags.fuse_beta = _params.beta_fusion_enabled
-					  && (_control_status.flags.fixed_wing || _control_status.flags.fuse_aspd)
+					  && _control_status.flags.fixed_wing
 					  && _control_status.flags.in_air
 					  && !_control_status.flags.fake_pos;
 
@@ -127,9 +127,10 @@ bool Ekf::fuseSideslip(estimator_aid_source1d_s &sideslip)
 	_fault_status.flags.bad_sideslip = false;
 
 	const float epsilon = 1e-3f;
+	VectorState H; // Observation jacobian
+	VectorState K; // Kalman gain vector
 
-	const VectorState H = sym::ComputeSideslipH(_state.vector(), epsilon);
-	VectorState K = P * H / sideslip.innovation_variance;
+	sym::ComputeSideslipHAndK(_state.vector(), P, sideslip.innovation_variance, epsilon, &H, &K);
 
 	if (update_wind_only) {
 		const Vector2f K_wind = K.slice<State::wind_vel.dof, 1>(State::wind_vel.idx, 0);
@@ -141,6 +142,8 @@ bool Ekf::fuseSideslip(estimator_aid_source1d_s &sideslip)
 
 	sideslip.fused = true;
 	sideslip.time_last_fuse = _time_delayed_us;
+
+	_fault_status.flags.bad_sideslip = false;
 
 	return true;
 }

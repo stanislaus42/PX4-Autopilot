@@ -76,7 +76,7 @@ void Sih::run()
 	_airspeed_time = task_start;
 	_dist_snsr_time = task_start;
 	_vehicle = (VehicleType)constrain(_sih_vtype.get(), static_cast<typeof _sih_vtype.get()>(0),
-					  static_cast<typeof _sih_vtype.get()>(3));
+					  static_cast<typeof _sih_vtype.get()>(2));
 
 	_actuator_out_sub = uORB::Subscription{ORB_ID(actuator_outputs_sim)};
 
@@ -216,8 +216,7 @@ void Sih::sensor_step()
 
 	reconstruct_sensors_signals(now);
 
-	if ((_vehicle == VehicleType::FW || _vehicle == VehicleType::TS || _vehicle == VehicleType::SVTOL)
-	    && now - _airspeed_time >= 50_ms) {
+	if ((_vehicle == VehicleType::FW || _vehicle == VehicleType::TS) && now - _airspeed_time >= 50_ms) {
 		_airspeed_time = now;
 		send_airspeed(now);
 	}
@@ -303,7 +302,7 @@ void Sih::read_motors(const float dt)
 	if (_actuator_out_sub.update(&actuators_out)) {
 		_last_actuator_output_time = actuators_out.timestamp;
 
-		for (int i = 0; i < NUM_ACTUATORS_MAX; i++) { // saturate the motor signals
+		for (int i = 0; i < NB_MOTORS; i++) { // saturate the motor signals
 			if ((_vehicle == VehicleType::FW && i < 3) || (_vehicle == VehicleType::TS && i > 3)) {
 				_u[i] = actuators_out.output[i];
 
@@ -329,7 +328,7 @@ void Sih::generate_force_and_torques()
 		_T_B = Vector3f(_T_MAX * _u[3], 0.0f, 0.0f); 	// forward thruster
 		// _Mt_B = Vector3f(_Q_MAX*_u[3], 0.0f,0.0f); 	// thruster torque
 		_Mt_B = Vector3f();
-		generate_fw_aerodynamics(_u[0], _u[1], _u[2], _u[3]);
+		generate_fw_aerodynamics();
 
 	} else if (_vehicle == VehicleType::TS) {
 		_T_B = Vector3f(0.0f, 0.0f, -_T_MAX * (_u[0] + _u[1]));
@@ -338,31 +337,17 @@ void Sih::generate_force_and_torques()
 
 		// _Fa_E = -_KDV * _v_E;   // first order drag to slow down the aircraft
 		// _Ma_B = -_KDW * _w_B;   // first order angular damper
-
-	} else if (_vehicle == VehicleType::SVTOL) {
-
-		_T_B = Vector3f(_T_MAX * 2 * _u[7], 0.0f, -_T_MAX * (+_u[0] + _u[1] + _u[2] + _u[3]));
-		_Mt_B = Vector3f(_L_ROLL * _T_MAX * (-_u[0] + _u[1] + _u[2] - _u[3]),
-				 _L_PITCH * _T_MAX * (+_u[0] - _u[1] + _u[2] - _u[3]),
-				 _Q_MAX * (+_u[0] + _u[1] - _u[2] - _u[3]));
-
-		// thrust 0 because it is already contained in _T_B. in
-		// equations_of_motion they are all summed into sum_of_forces_E
-		generate_fw_aerodynamics(_u[4], _u[5], _u[6], 0);
 	}
 }
 
-void Sih::generate_fw_aerodynamics(const float roll_cmd, const float pitch_cmd, const float yaw_cmd,
-				   const float throttle_cmd)
+void Sih::generate_fw_aerodynamics()
 {
 	const Vector3f v_B = _q_E.rotateVectorInverse(_v_E);
 	const float &alt = _lla.altitude();
-
-	_wing_l.update_aero(v_B, _w_B, alt, roll_cmd * FLAP_MAX);
-	_wing_r.update_aero(v_B, _w_B, alt, -roll_cmd * FLAP_MAX);
-
-	_tailplane.update_aero(v_B, _w_B, alt, -pitch_cmd * FLAP_MAX, _T_MAX * throttle_cmd);
-	_fin.update_aero(v_B, _w_B, alt, yaw_cmd * FLAP_MAX, _T_MAX * throttle_cmd);
+	_wing_l.update_aero(v_B, _w_B, alt, -_u[0]*FLAP_MAX);
+	_wing_r.update_aero(v_B, _w_B, alt, _u[0]*FLAP_MAX);
+	_tailplane.update_aero(v_B, _w_B, alt, -_u[1]*FLAP_MAX, _T_MAX * _u[3]);
+	_fin.update_aero(v_B, _w_B, alt, _u[2]*FLAP_MAX, _T_MAX * _u[3]);
 	_fuselage.update_aero(v_B, _w_B, alt);
 
 	// sum of aerodynamic forces
@@ -427,7 +412,7 @@ void Sih::equations_of_motion(const float dt)
 	Vector3f ground_force_E;
 
 	if ((_lla.altitude() - _lpos_ref_alt) < 0.f && force_down > 0.f) {
-		if (_vehicle == VehicleType::MC || _vehicle == VehicleType::TS || _vehicle == VehicleType::SVTOL) {
+		if (_vehicle == VehicleType::MC || _vehicle == VehicleType::TS) {
 			ground_force_E = -sum_of_forces_E;
 
 			if (!_grounded) {
@@ -552,8 +537,6 @@ void Sih::send_airspeed(const hrt_abstime &time_now_us)
 	// TODO: send differential pressure instead?
 	airspeed_s airspeed{};
 	airspeed.timestamp_sample = time_now_us;
-
-	// regardless of vehicle type, body frame, etc this holds as long as wind=0
 	airspeed.true_airspeed_m_s = fmaxf(0.1f, _v_E.norm() + generate_wgn() * 0.2f);
 	airspeed.indicated_airspeed_m_s = airspeed.true_airspeed_m_s * sqrtf(_wing_l.get_rho() / RHO);
 	airspeed.air_temperature_celsius = NAN;
@@ -571,7 +554,7 @@ void Sih::send_dist_snsr(const hrt_abstime &time_now_us)
 	device_id.devid_s.devtype = DRV_DIST_DEVTYPE_SIM;
 
 	distance_sensor_s distance_sensor{};
-	// distance_sensor.timestamp_sample = time_now_us;
+	//distance_sensor.timestamp_sample = time_now_us;
 	distance_sensor.device_id = device_id.devid;
 	distance_sensor.type = distance_sensor_s::MAV_DISTANCE_SENSOR_LASER;
 	distance_sensor.orientation = distance_sensor_s::ROTATION_DOWNWARD_FACING;
@@ -723,9 +706,6 @@ int Sih::print_status()
 		PX4_INFO("aoa [deg]: %d", (int)(degrees(_ts[4].get_aoa())));
 		PX4_INFO("v segment (m/s)");
 		_ts[4].get_vS().print();
-
-	} else if (_vehicle == VehicleType::SVTOL) {
-		PX4_INFO("Running Standard VTOL");
 	}
 
 	PX4_INFO("vehicle landed: %d", _grounded);

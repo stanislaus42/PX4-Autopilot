@@ -115,7 +115,8 @@
  * Note that these are unshifted addresses.
  */
 
-#define BOARD_MTD_NUM_EEPROM        2 /* MTD: base_eeprom, imu_eeprom*/
+// #define BOARD_MTD_NUM_EEPROM        2 /* MTD: base_eeprom, imu_eeprom*/
+#define BOARD_MTD_NUM_EEPROM        3 /* MTD: base_eeprom, imu_eeprom*/ /*additional EEPROM for /fs/mtd_params*/
 #define PX4_I2C_OBDEV_SE050         0x48
 
 #define GPIO_I2C4_DRDY1_BMP388      /* PG5  */  (GPIO_INPUT|GPIO_FLOAT|GPIO_EXTI|GPIO_PORTG|GPIO_PIN5)
@@ -217,7 +218,7 @@
 #endif
 /* PWM
  */
-#define DIRECT_PWM_OUTPUT_CHANNELS  8//9
+#define DIRECT_PWM_OUTPUT_CHANNELS  9
 
 
 /* Power supply control and monitoring GPIOs */

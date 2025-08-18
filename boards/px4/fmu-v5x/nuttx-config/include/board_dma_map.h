@@ -93,8 +93,8 @@
 //#define DMAMAP_SDMMC2     DMAMAP_SDMMC2_1     // DMA2, Stream 0, Channel 11
 #define DMAMAP_SDMMC1     DMAMAP_SDMMC1_1     // DMA2, Stream 3, Channel 4
 #define DMAMAP_USART6_RX  DMAMAP_USART6_RX_1  // DMA2, Stream 1, Channel 5    (PX4IO)
-// #define DMAMAP_SPI1_RX    DMAMAP_SPI1_RX_2    // DMA2, Stream 2, Channel 3    (SPI sensors RX)
-// #define DMAMAP_SPI1_TX    DMAMAP_SPI1_TX_1    // DMA2, Stream 3, Channel 3    (SPI sensors TX)
+#define DMAMAP_SPI1_RX    DMAMAP_SPI1_RX_2    // DMA2, Stream 2, Channel 3    (SPI sensors RX)
+#define DMAMAP_SPI1_TX    DMAMAP_SPI1_TX_1    // DMA2, Stream 3, Channel 3    (SPI sensors TX)
 //      AVAILABLE                             // DMA2, Stream 4
 //      DMAMAP_TIM1_UP                        // DMA2, Stream 5, Channel 6    (DSHOT)
 //      AVAILABLE                             // DMA2, Stream 6

@@ -393,11 +393,7 @@ bool Ekf::isYawEmergencyEstimateAvailable() const
 		return false;
 	}
 
-	const float yaw_var = _yawEstimator.getYawVar();
-
-	return (yaw_var > 0.f)
-	       && (yaw_var < sq(_params.EKFGSF_yaw_err_max))
-	       && PX4_ISFINITE(yaw_var);
+	return _yawEstimator.getYawVar() < sq(_params.EKFGSF_yaw_err_max);
 }
 
 bool Ekf::isYawFailure() const

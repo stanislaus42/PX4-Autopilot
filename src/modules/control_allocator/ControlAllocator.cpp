@@ -314,7 +314,7 @@ ControlAllocator::Run()
 #endif
 
 	// Check if parameters have changed
-	if (_parameter_update_sub.updated()) {
+	if (_parameter_update_sub.updated() && !_armed) {
 		// clear update
 		parameter_update_s param_update;
 		_parameter_update_sub.copy(&param_update);

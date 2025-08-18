@@ -46,7 +46,12 @@ FeasibilityChecker::FeasibilityChecker() :
 
 void FeasibilityChecker::reset()
 {
-	_checks_failed.value = 0;
+	_mission_validity_failed = false;
+	_takeoff_failed = false;
+	_land_pattern_validity_failed = false;
+	_distance_between_waypoints_failed = false;
+	_fixed_wing_land_approach_failed = false;
+	_takeoff_land_available_failed = false;
 
 	_found_item_with_position = false;
 	_has_vtol_takeoff = false;
@@ -150,11 +155,11 @@ bool FeasibilityChecker::processNextItem(mission_item_s &mission_item, const int
 		updateData();
 	}
 
-	if (!_checks_failed.flags.mission_validity_failed) {
-		_checks_failed.flags.mission_validity_failed = !checkMissionItemValidity(mission_item, current_index);
+	if (!_mission_validity_failed) {
+		_mission_validity_failed = !checkMissionItemValidity(mission_item, current_index);
 	}
 
-	if (_checks_failed.flags.mission_validity_failed) {
+	if (_mission_validity_failed) {
 		// if a mission item is not valid then abort the other checks
 		return false;
 	}
@@ -172,7 +177,7 @@ bool FeasibilityChecker::processNextItem(mission_item_s &mission_item, const int
 	}
 
 	if (current_index == total_count - 1) {
-		_checks_failed.flags.takeoff_land_available_failed = !checkTakeoffLandAvailable();
+		_takeoff_land_available_failed = !checkTakeoffLandAvailable();
 	}
 
 	_mission_item_previous = mission_item;
@@ -183,39 +188,39 @@ bool FeasibilityChecker::processNextItem(mission_item_s &mission_item, const int
 void FeasibilityChecker::doCommonChecks(mission_item_s &mission_item, const int current_index)
 {
 
-	if (!_checks_failed.flags.distance_between_waypoints_failed) {
-		_checks_failed.flags.distance_between_waypoints_failed = !checkDistancesBetweenWaypoints(mission_item);
+	if (!_distance_between_waypoints_failed) {
+		_distance_between_waypoints_failed = !checkDistancesBetweenWaypoints(mission_item);
 	}
 
 	if (!_first_waypoint_found) {
 		checkHorizontalDistanceToFirstWaypoint(mission_item);
 	}
 
-	if (!_checks_failed.flags.takeoff_failed) {
-		_checks_failed.flags.takeoff_failed = !checkTakeoff(mission_item);
+	if (!_takeoff_failed) {
+		_takeoff_failed = !checkTakeoff(mission_item);
 	}
 
-	if (!_checks_failed.flags.items_fit_to_vehicle_type_failed) {
-		_checks_failed.flags.items_fit_to_vehicle_type_failed = !checkItemsFitToVehicleType(mission_item);
+	if (!_items_fit_to_vehicle_type_failed) {
+		_items_fit_to_vehicle_type_failed = !checkItemsFitToVehicleType(mission_item);
 	}
 }
 
 void FeasibilityChecker::doVtolChecks(mission_item_s &mission_item, const int current_index, const int last_index)
 {
-	if (!_checks_failed.flags.land_pattern_validity_failed) {
-		_checks_failed.flags.land_pattern_validity_failed = !checkLandPatternValidity(mission_item, current_index, last_index);
+	if (!_land_pattern_validity_failed) {
+		_land_pattern_validity_failed = !checkLandPatternValidity(mission_item, current_index, last_index);
 	}
 
 }
 
 void FeasibilityChecker::doFixedWingChecks(mission_item_s &mission_item, const int current_index, const int last_index)
 {
-	if (!_checks_failed.flags.land_pattern_validity_failed) {
-		_checks_failed.flags.land_pattern_validity_failed = !checkLandPatternValidity(mission_item, current_index, last_index);
+	if (!_land_pattern_validity_failed) {
+		_land_pattern_validity_failed = !checkLandPatternValidity(mission_item, current_index, last_index);
 	}
 
-	if (!_checks_failed.flags.fixed_wing_land_approach_failed) {
-		_checks_failed.flags.fixed_wing_land_approach_failed = !checkFixedWindLandApproach(mission_item, current_index);
+	if (!_fixed_wing_land_approach_failed) {
+		_fixed_wing_land_approach_failed = !checkFixedWindLandApproach(mission_item, current_index);
 	}
 
 }

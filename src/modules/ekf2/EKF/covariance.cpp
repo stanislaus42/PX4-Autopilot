@@ -280,17 +280,7 @@ void Ekf::constrainStateVariances()
 void Ekf::constrainStateVar(const IdxDof &state, float min, float max)
 {
 	for (unsigned i = state.idx; i < (state.idx + state.dof); i++) {
-		if (P(i, i) < min) {
-			P(i, i) = min;
-
-		} else if (P(i, i) > max) {
-			// Constrain the variance growth by fusing zero innovation as clipping the variance
-			// would artifically increase the correlation between states and destabilize the filter.
-			const float innov = 0.f;
-			const float R = 10.f * P(i, i); // This reduces the variance by ~10% as K = P / (P + R)
-			const float innov_var = P(i, i) + R;
-			fuseDirectStateMeasurement(innov, innov_var, R, i);
-		}
+		P(i, i) = math::constrain(P(i, i), min, max);
 	}
 }
 
@@ -308,7 +298,9 @@ void Ekf::constrainStateVarLimitRatio(const IdxDof &state, float min, float max,
 	float limited_max = math::constrain(state_var_max, min, max);
 	float limited_min = math::constrain(limited_max / max_ratio, min, max);
 
-	constrainStateVar(state, limited_min, limited_max);
+	for (unsigned i = state.idx; i < (state.idx + state.dof); i++) {
+		P(i, i) = math::constrain(P(i, i), limited_min, limited_max);
+	}
 }
 
 void Ekf::resetQuatCov(const float yaw_noise)

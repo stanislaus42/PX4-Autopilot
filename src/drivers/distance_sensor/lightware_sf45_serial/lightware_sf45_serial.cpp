@@ -33,17 +33,18 @@
 
 #include "lightware_sf45_serial.hpp"
 
-#include <fcntl.h>
-#include <float.h>
 #include <inttypes.h>
+#include <fcntl.h>
 #include <termios.h>
-
 #include <lib/crc/crc.h>
 #include <lib/mathlib/mathlib.h>
-#include <matrix/matrix/math.hpp>
-#include <ObstacleMath.hpp>
+
+#include <float.h>
 
 using namespace time_literals;
+
+/* Configuration Constants */
+
 
 SF45LaserSerial::SF45LaserSerial(const char *port) :
 	ScheduledWorkItem(MODULE_NAME, px4::serial_port_to_wq(port)),
@@ -135,6 +136,8 @@ int SF45LaserSerial::measure()
 
 int SF45LaserSerial::collect()
 {
+	float distance_m = -1.0f;
+
 	if (_sensor_state == STATE_UNINIT) {
 
 		perf_begin(_sample_perf);
@@ -193,7 +196,8 @@ int SF45LaserSerial::collect()
 		sf45_get_and_handle_request(payload_length, SF_DISTANCE_DATA_CM);
 
 		if (_crc_valid) {
-			sf45_process_replies();
+			sf45_process_replies(&distance_m);
+			PX4_DEBUG("val (float): %8.4f, valid: %s", (double)distance_m, ((_crc_valid) ? "OK" : "NO"));
 			perf_end(_sample_perf);
 			return PX4_OK;
 		}
@@ -588,7 +592,7 @@ void SF45LaserSerial::sf45_send(uint8_t msg_id, bool write, int32_t *data, uint8
 	}
 }
 
-void SF45LaserSerial::sf45_process_replies()
+void SF45LaserSerial::sf45_process_replies(float *distance_m)
 {
 	switch (rx_field.msg_id) {
 	case SF_DISTANCE_DATA_CM: {
@@ -636,34 +640,20 @@ void SF45LaserSerial::sf45_process_replies()
 			}
 
 			// Convert to meters for the debug message
-			float distance_m = raw_distance * SF45_SCALE_FACTOR;
+			*distance_m = raw_distance * SF45_SCALE_FACTOR;
 			_current_bin_dist = ((uint16_t)raw_distance < _current_bin_dist) ? (uint16_t)raw_distance : _current_bin_dist;
 
 			uint8_t current_bin = sf45_convert_angle(scaled_yaw);
 
 			if (current_bin != _previous_bin) {
 				PX4_DEBUG("scaled_yaw: \t %d, \t current_bin: \t %d, \t distance: \t %8.4f\n", scaled_yaw, current_bin,
-					  (double)distance_m);
-
-				if (_vehicle_attitude_sub.updated()) {
-					vehicle_attitude_s vehicle_attitude;
-
-					if (_vehicle_attitude_sub.copy(&vehicle_attitude)) {
-						_vehicle_attitude = matrix::Quatf(vehicle_attitude.q);
-					}
-				}
-
-				float current_bin_dist = static_cast<float>(_current_bin_dist);
-				float scaled_yaw_rad = math::radians(static_cast<float>(scaled_yaw));
-				ObstacleMath::project_distance_on_horizontal_plane(current_bin_dist, scaled_yaw_rad, _vehicle_attitude);
-				_current_bin_dist = static_cast<uint16_t>(current_bin_dist);
+					  (double)*distance_m);
 
 				if (_current_bin_dist > _obstacle_distance.max_distance) {
 					_current_bin_dist = _obstacle_distance.max_distance + 1; // As per ObstacleDistance.msg definition
 				}
 
 				hrt_abstime now = hrt_absolute_time();
-
 				_handle_missed_bins(current_bin, _previous_bin, _current_bin_dist, now);
 
 				_publish_obstacle_msg(now);
@@ -737,7 +727,6 @@ void SF45LaserSerial::_handle_missed_bins(uint8_t current_bin, uint8_t previous_
 		}
 	}
 }
-
 uint8_t SF45LaserSerial::sf45_convert_angle(const int16_t yaw)
 {
 	uint8_t mapped_sector = 0;

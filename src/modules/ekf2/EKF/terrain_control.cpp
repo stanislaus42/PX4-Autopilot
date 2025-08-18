@@ -63,12 +63,13 @@ void Ekf::controlTerrainFakeFusion()
 		initTerrain();
 	}
 
-	if (!_control_status.flags.in_air) {
-		bool no_terrain_aiding = !_control_status.flags.rng_terrain
-					 && !_control_status.flags.opt_flow_terrain
-					 && isTimedOut(_time_last_terrain_fuse, (uint64_t)1e6);
+	if (!_control_status.flags.in_air
+	    && !_control_status.flags.rng_terrain
+	    && !_control_status.flags.opt_flow_terrain) {
 
-		if (no_terrain_aiding && (_height_sensor_ref != HeightSensor::RANGE)) {
+		bool recent_terrain_aiding = isRecent(_time_last_terrain_fuse, (uint64_t)1e6);
+
+		if (_control_status.flags.vehicle_at_rest || !recent_terrain_aiding) {
 			initTerrain();
 		}
 	}

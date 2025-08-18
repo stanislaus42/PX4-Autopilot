@@ -1,6 +1,6 @@
 /****************************************************************************
  *
- *   Copyright (c) 2018-2024 PX4 Development Team. All rights reserved.
+ *   Copyright (c) 2018 PX4 Development Team. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -38,7 +38,6 @@
  */
 
 #include "CollisionPrevention.hpp"
-#include "ObstacleMath.hpp"
 #include <px4_platform_common/events.h>
 
 using namespace matrix;
@@ -401,8 +400,14 @@ CollisionPrevention::_addDistanceSensorData(distance_sensor_s &distance_sensor, 
 		int lower_bound = (int)round((sensor_yaw_body_deg  - math::degrees(distance_sensor.h_fov / 2.0f)) / BIN_SIZE);
 		int upper_bound = (int)round((sensor_yaw_body_deg  + math::degrees(distance_sensor.h_fov / 2.0f)) / BIN_SIZE);
 
+
+		// rotate vehicle attitude into the sensor body frame
+		Quatf attitude_sensor_frame = vehicle_attitude;
+		attitude_sensor_frame.rotate(Vector3f(0.f, 0.f, sensor_yaw_body_rad));
+		float sensor_dist_scale = cosf(Eulerf(attitude_sensor_frame).theta()); // verify
+
 		if (distance_reading < distance_sensor.max_distance) {
-			ObstacleMath::project_distance_on_horizontal_plane(distance_reading, sensor_yaw_body_rad, vehicle_attitude);
+			distance_reading = distance_reading * sensor_dist_scale;
 		}
 
 		uint16_t sensor_range = static_cast<uint16_t>(100.0f * distance_sensor.max_distance + 0.5f); // convert to cm
